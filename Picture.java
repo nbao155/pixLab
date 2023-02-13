@@ -225,6 +225,26 @@ public class Picture extends SimplePicture
 			locationx = 0; 
 		}
 	}
+	
+	public void blur(int size){
+		Pixel[][] pixels = this.getPixels2D();
+		int width = this.getWidth();
+		int height = this.getHeight();
+		Pixel[][] pixelated = new Pixel[height/size+1][width/size+1];
+		int avgBlue = 0;
+		int avgRed = 0;
+		int avgGreen = 0;
+		int locationx = 0;
+		int locationy = 0;
+		int counter = 0;
+		int counter1 = 0;
+		for(int i = 0;i<width;i++){
+			for(int a = 0;a<height;a++){
+				if(a==0){
+					avgBlue = (
+			}
+		}
+	}
 				  
   /** Method that mirrors the picture around a 
     * vertical mirror in the center of the picture
