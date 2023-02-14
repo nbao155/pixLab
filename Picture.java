@@ -147,102 +147,38 @@ public class Picture extends SimplePicture
 		int locationy = 0;
 		int counter = 0;
 		int counter1 = 0;
-		for(int a = size/2;a<width;a+=size){
-			for(int i = size/2;i<height;i+=size){
-				if(i==height-1){
-					for(int b = i-size/2;b<height;b++){
-						if(b<0)
-							b = 0;
-						if(a==width-1){
-							for(int c = a-size/2;c<a;c++){
-								if(c<0)
-									c = 0;
-								avgBlue += pixels[b][c].getBlue();
-								avgRed += pixels[b][c].getRed();
-								avgGreen += pixels[b][c].getGreen();
-								counter++;
-							}
-						}
-						else{
-							for(int c = a-size/2;c<a+size/2;c++){
-								if(c<0)
-									c = 0;
-								avgBlue += pixels[b][c].getBlue();
-								avgRed += pixels[b][c].getRed();
-								avgGreen += pixels[b][c].getGreen();
-								counter++;
-							}
-						}
-					}
-					avgBlue = avgBlue/counter;
-					avgRed = avgRed/counter;
-					avgGreen = avgGreen/counter;
-					pixelated[locationy][locationx].setBlue(avgBlue);
-					pixelated[locationy][locationx].setGreen(avgGreen);
-					pixelated[locationy][locationx].setRed(avgRed);
-					locationy = 0;
-					locationx += 1;
-				}
-				else{
-					for(int b = i-size/2;b<=i+size/2;b++){
-						for(int c = a-size/2;c<=a+size/2;c++){
-							avgBlue += pixels[b][c].getBlue();
-							avgRed += pixels[b][c].getRed();
-							avgGreen += pixels[b][c].getGreen();
-							counter++;
-						}
-					}
-					avgBlue = avgBlue/counter;
-					avgRed = avgRed/counter;
-					avgGreen = avgGreen/counter;
-					pixelated[locationy][locationx].setBlue(avgBlue);
-					pixelated[locationy][locationx].setGreen(avgGreen);
-					pixelated[locationy][locationx].setRed(avgRed);
-					locationy++;
-					locationx++;
+		
+	}
+	
+	public Color averageColor(Pixel[][] pixels, int row, int col, int factor){
+		int sumRed = 0;
+		int sumBlue = 0;
+		int sumGreen = 0;
+		int count = 0;
+		for(int r = row-factor;r<row+factor;r++){
+			for(int c = col-factor;c<col+factor;c++){
+				if(r<pixels.length&&c<pixels[r].length&&r>=0&&c>=0){
+					sumGreen += pixels[r][c].getGreen;
+					sumBlue += pixels[r][c].getBlue;
+					sumRed += pixels[r][c].getRed;
+					count++;
 				}
 			}
 		}
-		locationx = 0;
-		locationy = 0;
-		counter = 0;
-		for(Pixel[] rowarr : pixels){
-			for(Pixel pixelObj: rowarr){
-				pixelObj.setGreen(pixelated[locationy][locationx].getGreen);
-				pixelObj.setRed(pixelated[locationy][locationx].getRed);
-				pixelObj.setBlue(pixelated[locationy][locationx].getBlue);
-				counter++;
-				if(counter==size){
-					locationx++;
-					counter = 0;
-				}
-			}
-			counter1++;
-			if(counter1==size){
-				counter1 = 0;
-				locationy++;
-			}
-			locationx = 0; 
-		}
+		return new Color(sumRed/count, sumGreen/count, sumBlue/count);
 	}
 	
 	public void blur(int size){
 		Pixel[][] pixels = this.getPixels2D();
-		int width = this.getWidth();
-		int height = this.getHeight();
-		Pixel[][] pixelated = new Pixel[height/size+1][width/size+1];
-		int avgBlue = 0;
-		int avgRed = 0;
-		int avgGreen = 0;
 		int locationx = 0;
 		int locationy = 0;
-		int counter = 0;
-		int counter1 = 0;
-		for(int i = 0;i<width;i++){
-			for(int a = 0;a<height;a++){
-				if(a==0){
-					avgBlue = (
+		for(Pixel[] rowArray : pixels){
+			for(Pixel pixelObj : rowArray){
+				pixelObj.setColor(averageColor(pixelated, locationx, locationy, size));
+				locationy++;
 			}
+			locationx++;
+			locationy = 0;
 		}
 	}
 				  
