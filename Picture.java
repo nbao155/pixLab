@@ -147,9 +147,45 @@ public class Picture extends SimplePicture
 		int locationy = 0;
 		int counter = 0;
 		int counter1 = 0;
-		
+		Color avgColor;
+		for(int loc = 0;loc<pixels.length;loc+=size){
+			for(int colloc = 0;colloc<pixels[0].length;colloc+=size){
+				for(int row = loc;row<loc+size;row++){
+					for(int col = colloc;col<colloc+size;col++){
+						if(row<height&&col<width){
+							avgBlue += pixels[row][col].getBlue();
+							avgRed += pixels[row][col].getRed();
+							avgGreen += pixels[row][col].getGreen();
+							counter++;
+						}
+					}
+				}
+				avgBlue = avgBlue/counter;
+				avgRed = avgRed/counter;
+				avgGreen = avgGreen/counter;
+				avgColor = new Color(avgRed, avgGreen, avgBlue);
+				for(int row = loc;row<loc+size;row++){
+					for(int col = colloc;col<colloc+size;col++){
+						if(row<height&&col<width)
+							pixels[row][col].setColor(avgColor);
+					}
+				}
+				avgBlue = 0;
+				avgGreen = 0;
+				avgRed = 0;
+				counter = 0;
+			}
+		}
 	}
 	
+	/**
+	 * Determines the average color of a group of pixels from a given 2D array
+	 * @param	pixels	The input array of pixels
+	 * @param	row		The center row of the group
+	 * @param	col		The center column of the group
+	 * @param	factor	Determines how large the group is
+	 * @return	The average Color of the group
+	 */
 	public Color averageColor(Pixel[][] pixels, int row, int col, int factor){
 		int sumRed = 0;
 		int sumBlue = 0;
@@ -157,10 +193,10 @@ public class Picture extends SimplePicture
 		int count = 0;
 		for(int r = row-factor;r<row+factor;r++){
 			for(int c = col-factor;c<col+factor;c++){
-				if(r<pixels.length&&c<pixels[r].length&&r>=0&&c>=0){
-					sumGreen += pixels[r][c].getGreen;
-					sumBlue += pixels[r][c].getBlue;
-					sumRed += pixels[r][c].getRed;
+				if(r<pixels.length&&c<pixels[0].length&&r>=0&&c>=0){
+					sumGreen += pixels[r][c].getGreen();
+					sumBlue += pixels[r][c].getBlue();
+					sumRed += pixels[r][c].getRed();
 					count++;
 				}
 			}
@@ -168,18 +204,68 @@ public class Picture extends SimplePicture
 		return new Color(sumRed/count, sumGreen/count, sumBlue/count);
 	}
 	
-	public void blur(int size){
+	/**
+	 * Blurs the picture
+	 * @param	size	Determines the magnitude of the blurring
+	 * @return			The blurred picture
+	 */
+	public Picture blur(int size){
 		Pixel[][] pixels = this.getPixels2D();
+		Picture result = new Picture(pixels.length, pixels[0].length);
+		Pixels[][] respix = result.getPixels2D();
 		int locationx = 0;
 		int locationy = 0;
 		for(Pixel[] rowArray : pixels){
 			for(Pixel pixelObj : rowArray){
-				pixelObj.setColor(averageColor(pixelated, locationx, locationy, size));
+				pixelObj.setColor(averageColor(pixels, locationx, locationy, size));
 				locationy++;
 			}
 			locationx++;
 			locationy = 0;
 		}
+		for(int i = 0;i<pixels.length;i++){
+			for(int a = 0;a<pixels[0].length){
+				respix.setColor(pixels[i][a].getColor());
+			}
+		}
+		return result;
+	}
+	/** Method that enhances a picture by getting average Color around
+	 *  a pixel then applies the following formula:
+	 *
+	 * pixelColor <- 2 * currentValue - averageValue
+	 *
+	 * size is the area to sample for blur.
+	 *
+	 * @param size Larger means more area to average around pixel
+	 * and longer compute time.
+	 * @return enhanced picture
+	*/
+	public Picture enhance(int size){
+		Pixel[][] pixels = this.getPixels2D();
+		Picture result = new Picture(pixels.length, pixels[0].length);
+		Pixel[][] resultPixels = result.getPixels2D();
+		Color cl;
+		int locx = 0;
+		int locy = 0;
+		for(Pixel[] rowArray : pixels){
+			for(Pixel pixelObj : rowArray){
+				cl = averageColor(pixels, locx, locy, size);
+				pixelObj.setBlue(2*pixelObj.getBlue()-cl.getBlue());
+				pixelObj.setRed(2*pixelObj.getRed()-cl.getRed());
+				pixelObj.setGreen(2*pixelObj.getGreen()-cl.getGreen());
+				locy++;
+			}
+			locx++;
+			locy = 0;
+		}
+		for(int i = 0;i<pixels.length;i++){
+			for(int a = 0;a<pixels[i].length;a++){
+				resultPixels[i][a].setColor(pixels[i][a].getColor());
+			}
+		}
+		pixels = this.getPixels2D();
+		return result;
 	}
 				  
   /** Method that mirrors the picture around a 
@@ -301,16 +387,231 @@ public class Picture extends SimplePicture
     }
   }
   
+  /**
+   * Swaps the left and right sides of the picture
+   * @return	The swapped picture
+   */
+  public Picture swapLeftRight(){
+	  Pixel[][] pixels = this.getPixels2D();
+	  Picture result = new Picture(pixels.length, pixels[0].length);
+	  Pixel[][] respix = result.getPixels2D();
+	  int width = pixels[0].length;
+	  for(int r = 0;r<pixels.length;r++){
+		  for(int c = 0;c<pixels[0].length;c++){
+			  int newcol = (c+width/2)%width;
+			  respix[r][newcol].setColor(pixels[r][c].getColor());
+		  }
+	  }
+	  return result;
+  }
+  
+   /** Splits the picture into groups of a value specified by the input, and increments them differently based on their location, creating a stair effect
+	* @param shiftCount The number of pixels to shift to the right
+	* @param steps The number of steps
+	* @return The picture with pixels shifted in stair steps
+    */
+	public Picture stairStep(int shiftCount, int steps){
+		Pixel[][] pixels = this.getPixels2D();
+		Picture result = new Picture(pixels.length, pixels[0].length);
+		Pixel[][] respix = result.getPixels2D();
+		int width = pixels[0].length;
+		int newcol;
+		int rowpos = 0;
+		double length = (double)pixels.length/(double)steps;
+		if(pixels.length%steps!=0){
+		//	length++;
+		}
+		for(int a = 1;a<=steps;a++){
+			for(int r = rowpos;r<(int)(a*length);r++){
+				for(int c = 0;c<width;c++){
+					if(r<pixels.length){
+						newcol = c+a*shiftCount;
+						if(newcol>=width)
+							newcol = newcol-width;
+						respix[r][newcol].setColor(pixels[r][c].getColor());
+					}
+				}
+			}
+			rowpos += pixels.length/steps;
+		}
+		return result;
+	}
+	
+	/** Distorts the horizontal center of the picture by shifting pixels horizontally
+	 * @param maxFactor Max height (shift) of curve in pixels
+	 * @return Liquified picture
+	 */
+	public Picture liquify(int maxHeight){
+		Pixel[][] pixels = this.getPixels2D();
+		Picture result = new Picture(pixels.length, pixels[0].length);
+		Pixel[][] respix = result.getPixels2D();
+		int bellWidth = 100;
+		int width = pixels[0].length;
+		int rightShift;
+		int newCol;
+		double exponent;
+		 for(int r = 0;r<pixels.length;r++){
+		  for(int c = 0;c<pixels[0].length;c++){
+			 exponent = Math.pow(r - pixels.length / 2.0, 2) / (2.0 * Math.pow(bellWidth, 2));
+			 rightShift = (int)(maxHeight * Math.exp(- exponent));
+			 newCol = c+rightShift;
+			 if(newCol>=width)
+				newCol = newCol-width;
+			//System.out.println(newCol);
+			//System.out.println(width+"W");
+			 respix[r][newCol].setColor(pixels[r][c].getColor());
+		  }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Creates oscillating distortions in a picture
+	 * @param amplitude		The maximum shift of the pixels
+	 * @return				Wavy picture
+	 */
+	public Picture wavy(int amplitude){
+		Pixel[][] pixels = this.getPixels2D();
+		Picture result = new Picture(pixels.length, pixels[0].length);
+		Pixel[][] respix = result.getPixels2D();
+		int width = pixels[0].length;
+		double frequency = 0.002;
+		int phaseShift = 10;
+		for(int r = 0;r<pixels.length;r++){
+			for(int c = 0;c<pixels[0].length;c++){
+				int pixelShift = (int)(amplitude * Math.sin((2*Math.PI*frequency*r+phaseShift)));
+				System.out.println(pixelShift);
+				System.out.println("ZZ"+Math.sin(60)+" "+r);
+				int newCol = c+pixelShift;
+				if(newCol>=width)
+					newCol = newCol-width;
+				if(newCol<0)
+					newCol = width+newCol;
+				respix[r][newCol].setColor(pixels[r][c].getColor());
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * Uses the pixel below to calculate the color distance and thus determine where edges are
+	 * @param threshhold	Determines what color distance is considered an edge
+	 * @return	A black and white picture showing edges
+	 */
+	public Picture edgeDetectionBelow(int threshhold){
+		Pixel[][] pixels = this.getPixels2D();
+		Picture result = new Picture(pixels.length, pixels[0].length);
+		Pixel[][] respix = result.getPixels2D(); 
+		Pixel topPix = null;
+		Pixel bottomPix = null;
+		Color bottomColor = null;
+		for(int r = 0;r<pixels.length-1;r++){
+			for(int c = 0;c<pixels[0].length;c++){
+				topPix = pixels[r][c];
+				bottomPix = pixels[r+1][c];
+				bottomColor = bottomPix.getColor();
+				if(topPix.colorDistance(bottomColor)>threshhold)
+				  respix[r][c].setColor(Color.BLACK);
+				else
+				  respix[r][c].setColor(Color.WHITE);
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * Returns a picture of a cat and dog superimposed on a background
+	 * @return	A picture of a cat and dog superimposed on a background
+	 */
+	public Picture greenScreen(){
+		SimplePicture cat0 = new SimplePicture("kitten1GreenScreen.jpg");
+		SimplePicture dog0 = new SimplePicture("puppy1GreenScreen.jpg");
+		Picture cat = cat0.scale(0.4, 0.4);
+		Picture dog = dog0.scale(0.2, 0.2);
+		Picture background = new Picture("IndoorHouseLibraryBackground.jpg");
+		Pixel[][] backgroundpixels = background.getPixels2D();
+		Picture result = new Picture(backgroundpixels.length, backgroundpixels[0].length);
+		Pixel[][] catPixels = cat.getPixels2D();
+		Pixel[][] dogPixels = dog.getPixels2D();
+		Pixel[][] respix = result.getPixels2D();
+		int dogrow = 0;
+		int dogcol = 0;
+		int catrow = 0;
+		int catcol = 0;
+		for(Pixel[] rowArray: catPixels){
+			for(Pixel pixelObj : rowArray){
+				if(pixelObj.getRed()==51&&pixelObj.getGreen()==204&&pixelObj.getBlue()==51){
+					pixelObj.setAlpha(255);
+				}
+			}
+		}
+		for(Pixel[] rowArray: dogPixels){
+			for(Pixel pixelObj : rowArray){
+				if(pixelObj.getRed()==51&&pixelObj.getGreen()==204&&pixelObj.getBlue()==51){
+					pixelObj.setAlpha(255);
+				}
+			}
+		}
+		for(int row = 0;row<backgroundpixels.length;row++){
+			for(int col = 0;col<backgroundpixels[0].length;col++){
+				if(row>=332&&row<=391&&col>=320&&col<=399){
+					if(isGreen(dogPixels[dogrow][dogcol])){
+						respix[row][col].setColor(backgroundpixels[row][col].getColor());
+					}
+					else{
+						respix[row][col].setColor(dogPixels[dogrow][dogcol].getColor());
+					}
+					if(dogcol<dog.getWidth()-1)
+						dogcol++;
+					else{
+						dogrow++;
+						dogcol = 0;
+					}
+				}
+				else if(row>=428&&row<=547&&col>=550&&col<=669){
+					if(isGreen(catPixels[catrow][catcol])){
+						respix[row][col].setColor(backgroundpixels[row][col].getColor());
+					}
+					else{
+						respix[row][col].setColor(catPixels[catrow][catcol].getColor());
+					}
+					if(catcol<cat.getWidth()-1){
+						catcol++;
+					}
+					else{
+						catrow++;
+						catcol = 0;
+					}
+				}
+				else{
+					respix[row][col].setColor(backgroundpixels[row][col].getColor());
+				}
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * Checks to see if a selected pixel is green
+	 * @param in	The input pixel
+	 * @return	If the pixel is green
+	 */
+	public boolean isGreen(Pixel in){
+		if(in.getGreen()-in.getBlue()>50&&in.getGreen()-in.getRed()>50)
+			return true;
+		else
+			return false;
+	}
   
   /* Main method for testing - each class in Java can have a main 
    * method 
    */
   public static void main(String[] args) 
   {
-    Picture beach = new Picture("beach.jpg");
+    Picture beach = new Picture("Fruits.jpg");
     beach.explore();
-    beach.zeroBlue();
+    beach.pixelate(10);
     beach.explore();
   }
   
-} // this } is the end of class Picture, put all new methods before this
+}
