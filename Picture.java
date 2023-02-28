@@ -205,14 +205,14 @@ public class Picture extends SimplePicture
 	}
 	
 	/**
-	 * Blurs the picture
+	 * Blurs the picture to a magnitude specified by the user
 	 * @param	size	Determines the magnitude of the blurring
 	 * @return			The blurred picture
 	 */
 	public Picture blur(int size){
 		Pixel[][] pixels = this.getPixels2D();
 		Picture result = new Picture(pixels.length, pixels[0].length);
-		Pixels[][] respix = result.getPixels2D();
+		Pixel[][] respix = result.getPixels2D();
 		int locationx = 0;
 		int locationy = 0;
 		for(Pixel[] rowArray : pixels){
@@ -224,8 +224,8 @@ public class Picture extends SimplePicture
 			locationy = 0;
 		}
 		for(int i = 0;i<pixels.length;i++){
-			for(int a = 0;a<pixels[0].length){
-				respix.setColor(pixels[i][a].getColor());
+			for(int a = 0;a<pixels[0].length;a++){
+				respix[i][a].setColor(pixels[i][a].getColor());
 			}
 		}
 		return result;
@@ -418,21 +418,20 @@ public class Picture extends SimplePicture
 		int newcol;
 		int rowpos = 0;
 		double length = (double)pixels.length/(double)steps;
-		if(pixels.length%steps!=0){
-		//	length++;
-		}
-		for(int a = 1;a<=steps;a++){
-			for(int r = rowpos;r<(int)(a*length);r++){
+		int runRows = 0;
+		for(int a = 0;a<steps;a++){
+			for(int r = rowpos;r<pixels.length;r++){
 				for(int c = 0;c<width;c++){
-					if(r<pixels.length){
-						newcol = c+a*shiftCount;
-						if(newcol>=width)
+					
+						newcol = c+(int)(a*shiftCount);
+						while(newcol>=width)
 							newcol = newcol-width;
 						respix[r][newcol].setColor(pixels[r][c].getColor());
-					}
+					
 				}
 			}
-			rowpos += pixels.length/steps;
+			rowpos += pixels.length/steps;//program does not work for step values that are not divisble by pixels.length as 
+			//rowpos +='s a double that is not an integer, and rounds down causing breakage
 		}
 		return result;
 	}
@@ -480,8 +479,8 @@ public class Picture extends SimplePicture
 		for(int r = 0;r<pixels.length;r++){
 			for(int c = 0;c<pixels[0].length;c++){
 				int pixelShift = (int)(amplitude * Math.sin((2*Math.PI*frequency*r+phaseShift)));
-				System.out.println(pixelShift);
-				System.out.println("ZZ"+Math.sin(60)+" "+r);
+				//System.out.println(pixelShift);
+				//System.out.println("ZZ"+Math.sin(60)+" "+r);
 				int newCol = c+pixelShift;
 				if(newCol>=width)
 					newCol = newCol-width;
@@ -608,10 +607,11 @@ public class Picture extends SimplePicture
    */
   public static void main(String[] args) 
   {
-    Picture beach = new Picture("Fruits.jpg");
+    Picture beach = new Picture("redMotorcycle.jpg");
     beach.explore();
-    beach.pixelate(10);
+	beach = beach.stairStep(1, 400);
+	beach.explore();
+    beach = beach.greenScreen();
     beach.explore();
   }
-  
 }
